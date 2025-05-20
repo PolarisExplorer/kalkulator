@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Cijena</title>
+    <style>
+        body {
+            background-color: #A3D8FF;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #A3D8FF;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-size: 25px;
+            margin-right: 10px;
+        }
+        input {
+            font-size: 25px;
+            padding: 5px;
+            width: 150px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #94FFD8;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #80E6C0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            font-size: 25px;
+        }
+        th {
+            background-color: #94FFD8;
+        }
+        .extra-options {
+            display: none;
+            margin-top: 15px;
+        }
+        .extra-options.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-group">
+            <label for="cena">Osnovna cijena:</label>
+            <input type="number" id="cena" step="0.01" inputmode="decimal" placeholder="npr. 10.00" onfocus="this.select();">
+        </div>
+        <div>
+            <button onclick="toggleExtraOptions()">Još opcija</button>
+            <button onclick="izracunaj()">Izračunaj</button>
+        </div>
+        <div class="extra-options" id="extraOptions">
+            <div class="input-group">
+                <label for="rabat">Rabat (%):</label>
+                <input type="number" id="rabat" step="0.01" inputmode="decimal" placeholder="npr. 10.00" onfocus="this.select();">
+            </div>
+            <div class="input-group">
+                <label for="nova_marza">Nova marža (%):</label>
+                <input type="number" id="nova_marza" step="0.01" inputmode="decimal" placeholder="npr. 20.00" onfocus="this.select();">
+            </div>
+            <div>
+                <button onclick="postaviMarzu(true)">Marža sa PDV-om</button>
+                <button onclick="postaviMarzu(false)">Samo marža</button>
+            </div>
+        </div>
+        <table id="rezultat">
+            <tr>
+                <th>Marža</th>
+                <th>Cijena</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        let marze = {
+            "8%": { vrijednost: 0.08, saPdv: true },
+            "12%": { vrijednost: 0.12, saPdv: true },
+            "20%": { vrijednost: 0.20, saPdv: true },
+            "30%": { vrijednost: 0.30, saPdv: true },
+            "Samo 10%": { vrijednost: 0.10, saPdv: false },
+            "Samo 20%": { vrijednost: 0.20, saPdv: false }
+        };
+
+        const boje = [
+            "#ff0000", // 1. red - crvena
+            "#ff8700", // 2. red - narančasta
+            "#ffd300", // 3. red - žuta
+            "#deff0a", // 4. red - svjetlo zelena
+            "#147df5", // 5. red - plava
+            "#be0aff"  // 6. red - ljubičasta
+        ];
+
+        let extraOptionsVisible = false;
+
+        function toggleExtraOptions() {
+            const extraOptions = document.getElementById("extraOptions");
+            extraOptionsVisible = !extraOptionsVisible;
+            extraOptions.classList.toggle("show", extraOptionsVisible);
+        }
+
+        function postaviMarzu(saPdv) {
+            const novaMarza = parseFloat(document.getElementById("nova_marza").value.replace(",", ".")) || 0;
+            if (novaMarza > 0) {
+                const naziv = `${novaMarza}%${saPdv ? "" : " Samo"}`;
+                const vrijednost = novaMarza / 100;
+                marze[naziv] = { vrijednost, saPdv };
+                document.getElementById("nova_marza").value = "";
+                izracunaj();
+            }
+        }
+
+        function izracunaj() {
+            const cena = parseFloat(document.getElementById("cena").value.replace(",", ".")) || 0;
+            const rabat = parseFloat(document.getElementById("rabat").value.replace(",", ".")) || 0;
+            const pdv = 0.17;
+
+            let konačnaCijena = cena;
+            if (rabat > 0 && rabat <= 100) {
+                konačnaCijena *= (1 - rabat / 100);
+            }
+
+            const tabela = document.getElementById("rezultat");
+            while (tabela.rows.length > 1) {
+                tabela.deleteRow(1);
+            }
+
+            let indexBoje = 0;
+            for (let [naziv, marza] of Object.entries(marze)) {
+                let finalnaCijena = konačnaCijena;
+                finalnaCijena *= (1 + marza.vrijednost); // Dodaj maržu
+                if (marza.saPdv) {
+                    finalnaCijena *= (1 + pdv); // Dodaj PDV ako je saPdv
+                }
+                let row = tabela.insertRow();
+                let cell1 = row.insertCell(0);
+                let cell2 = row.insertCell(1);
+                cell1.innerText = naziv;
+                cell2.innerText = finalnaCijena.toFixed(2) + " KM";
+
+                row.style.backgroundColor = boje[indexBoje];
+                indexBoje = (indexBoje + 1) % boje.length;
+            }
+        }
+    </script>
+</body>
+</html>
